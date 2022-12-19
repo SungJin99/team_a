@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+	PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+	"htttp://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace = "com.mnu.mapper.ClientMapper">
+	<sql id ="criteria">
+		<trim prefix="(" suffix=")	AND " prefixOverrides="OR">
+			<foreach item='type' collection="typeArr">
+				<trim prefix="OR">
+					<choose>
+						<when test="type == 'N'.toString()">
+							clientName like '%' ||#{keyword}||'%'						
+						</when>
+						<when test="type == 'L'.toString()">
+							driverLicense like '%' ||#{keyword}||'%'						
+						</when>
+						<when test="type == 'P'.toString()">
+							phoneNumber like '%' ||#{keyword}||'%'						
+						</when>
+					</choose>
+				</trim>
+			</foreach>
+		</trim>
+	</sql>
+	
+	<select id = "read" resultType="com.mnu.domain.ClientVO">
+		
+		select * from t_client where clientid = #{clientid}
+		
+	</select>
+	
+	<select id="getList" resultType="com.mnu.domain.ClientVO">
+		<![CDATA[
+			select * from t_client where clientid > 0
+		]]>
+	</select>
+	
+	<select id="getListWithPaging" resultType="com.mnu.domain.ClientVO">
+		<![CDATA[
+			select
+				clientid, clientName, driverLicense, phoneNumber
+			from
+				(
+				select /*+INDEX_DESC(t_client pk_client) */
+					rownum rn, clientid, clientName, driverLicense, phoneNumber
+				from
+					t_client
+				where
+		]]>
+		
+		<include refid="criteria"></include>
+		
+		<![CDATA[
+			rownum < = #{pageNum} * #{amount}
+			)
+		where rn > (#{pageNum} -1) * #{amount}
+		]]>
+	</select>
+		
+	<select id="getTotalCount" resultType="int">
+		<![CDATA[
+			select count(*) from t_client
+			
+			where
+		]]>
+		
+		<include refid="criteria"></include>
+		
+		<![CDATA[
+			clientid > 0
+		]]>
+	</select>
+	
+	<insert id = "insert">
+		
+		insert into t_client(clientid, clientName, driverLicense, phoneNumber)
+		values (seq_client.nextval, #{clientName}, #{driverLicense}, #{phoneNumber})		
+	
+	</insert>
+	
+	<insert id="insertSelectKey">
+		<selectKey keyProperty="clientid" order="BEFORE" resultType="long">
+			select seq_client.nextval from dual
+		</selectKey>
+			insert into t_client (clientid, clientName, driverLicense, phoneNumber)
+			values(#{clientid},  #{clientName}, #{driverLicense}, #{phoneNumber})
+	</insert>
+	
+	<update id = "update">
+		update t_client set clientName = #{clientName}, driverLicense = #{driverLicense}, phoneNumber = #{phoneNumber}
+		where clientid = #{clientid}
+	</update>
+	
+	<delete id = "delete">
+		delete from t_client where clientid = #{clientid}
+	</delete>
+</mapper>
+

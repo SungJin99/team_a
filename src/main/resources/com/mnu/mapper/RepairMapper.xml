@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+	PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+	"htttp://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace = "com.mnu.mapper.RepairMapper">
+	<sql id ="criteria">
+		<trim prefix="(" suffix=")	AND " prefixOverrides="OR">
+			<foreach item='type' collection="typeArr">
+				<trim prefix="OR">
+					<choose>
+						<when test="type == 'R'.toString()">
+							r.repairCheckList like '%' ||#{keyword}||'%'						
+						</when>
+						<when test="type == 'S'.toString()">
+							c.series like '%' ||#{keyword}||'%'						
+						</when>
+						<when test="type == 'C'.toString()">
+							r.carNumber like '%' ||#{keyword}||'%'						
+						</when>
+					</choose>
+				</trim>
+			</foreach>
+		</trim>
+	</sql>
+	
+	<select id = "read" resultType="com.mnu.domain.RepairVO">
+		
+		select * from t_repair r, t_car c, t_repairCheckList cl
+		where r.carNumber = c.carNumber and r.repairCheckList=cl.repairCheckList
+		and repairid = #{repairid}
+		
+	</select>
+	
+	<select id="getCarList" resultType="com.mnu.domain.CarVO">
+		<![CDATA[
+			select * from t_car
+		]]>
+	</select>
+	
+	<select id="getCheckList" resultType="com.mnu.domain.RepairCheckListVO">
+		<![CDATA[
+			select * from t_repairCheckList
+		]]>
+	</select>
+	
+	<select id="getListWithPaging" resultType="com.mnu.domain.RepairVO">
+		<![CDATA[
+			select
+				t.repairid, t.carNumber, t.series, t.repairCheckList, t.receipt
+			from
+				(
+				select /*+INDEX_(t_repair pk_repair) */
+					rownum rn, r.repairid repairid, r.carNumber carNumber, 
+					c.series series, cl.repairCheckList repairCheckList, r.receipt receipt
+				from
+					t_repair r, t_car c, t_repairCheckList cl
+				where r.carNumber=c.carNumber and r.repairCheckList=cl.repairCheckList and 
+		]]>
+		
+		<include refid="criteria"></include>
+		
+		<![CDATA[
+			rownum < = #{pageNum} * #{amount}
+			) t
+		where rn > (#{pageNum} -1) * #{amount}
+		]]>
+	</select>
+		
+	<select id="getTotalCount" resultType="int">
+		<![CDATA[
+			select count(distinct r.repairid) 
+			from t_repair r, t_car c, t_repairCheckList cl
+			
+			where
+		]]>
+		
+		<include refid="criteria"></include>
+		
+		<![CDATA[
+			repairid > 0
+		]]>
+	</select>
+	
+	<insert id = "insert">
+		
+		insert into t_repair(repairid, carNumber,repairCheckList, receipt)
+		values (seq_repair.nextval, #{carNumber}, #{repairCheckList}, TO_CHAR(#{receipt}, 'yyyy/MM/dd'))		
+	
+	</insert>
+	
+	<insert id="insertSelectKey">
+		<selectKey keyProperty="repairid" order="BEFORE" resultType="long">
+			select seq_repair.nextval from dual
+		</selectKey>
+			insert into t_repair (repairid, carNumber, repairCheckList, receipt)
+			values(#{repairid}, #{carNumber}, #{repairCheckList}, TO_CHAR(#{receipt}, 'yyyy/MM/dd'))
+	</insert>
+	
+	<update id = "update">
+		update t_repair set carNumber = #{carNumber}, 
+		repairCheckList = #{repairCheckList},
+		receipt = TO_CHAR(#{receipt}, 'yyyy/MM/dd') 
+		where repairid = #{repairid}
+	</update>
+	
+	<delete id = "delete">
+		delete from t_repair where repairid = #{repairid}
+	</delete>
+</mapper>

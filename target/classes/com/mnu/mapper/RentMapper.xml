@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+	PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+	"htttp://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace = "com.mnu.mapper.RentMapper">
+	<sql id ="criteria">
+		<trim prefix="(" suffix=")	AND " prefixOverrides="OR">
+			<foreach item='type' collection="typeArr">
+				<trim prefix="OR">
+					<choose>
+						<when test="type == 'R'.toString()">
+							r.rentid like '%' ||#{keyword}||'%'						
+						</when>
+						<when test="type == 'L'.toString()">
+							l.clientName like '%' ||#{keyword}||'%'						
+						</when>
+						<when test="type == 'C'.toString()">
+							c.carNumber like '%' ||#{keyword}||'%'						
+						</when>
+					</choose>
+				</trim>
+			</foreach>
+		</trim>
+	</sql>
+	
+	<select id = "read" resultType="com.mnu.domain.RentVO">
+		
+		select * from t_rent r, t_client l, t_car c 
+		where r.carid = c.carid and r.clientid = l.clientid 
+		and rentid = #{rentid}
+		
+	</select>
+	
+	<select id="getCarList" resultType="com.mnu.domain.CarVO">
+		<![CDATA[
+			select * from t_car
+		]]>
+	</select>
+	
+	<select id="getClientList" resultType="com.mnu.domain.ClientVO">
+		<![CDATA[
+			select * from t_client
+		]]>
+	</select>
+	
+	<select id="getListWithPaging" resultType="com.mnu.domain.RentVO">
+		<![CDATA[
+			select
+				t.rentid, t.clientName, t.carNumber, t.rentStartDate, t.rentEndDate
+			from
+				(
+				select /*+INDEX_(t_rent pk_rent) */
+					rownum rn, r.rentid rentid, l.clientName clientName, 
+					c.carNumber carNumber, r.rentStartDate rentStartDate, r.rentEndDate rentEndDate
+				from
+					t_rent r, t_car c, t_client l
+				where r.carid = c.carid and r.clientid = l.clientid and
+		]]>
+		
+		<include refid="criteria"></include>
+		
+		<![CDATA[
+			rownum < = #{pageNum} * #{amount}
+			) t
+		where  rn > (#{pageNum} -1) * #{amount}
+		]]>
+	</select>
+		
+	<select id="getTotalCount" resultType="int">
+		<![CDATA[
+			select count(distinct r.rentid) 
+			from t_rent r, t_car c , t_client l
+			
+			where
+		]]>
+		
+		<include refid="criteria"></include>
+		
+		<![CDATA[
+			rentid > 0
+		]]>
+	</select>
+	
+	<insert id = "insert">
+		
+		insert into t_rent(rentid, clientid, carid, rentStartDate, rentEndDate)
+		values (seq_rent.NEXTVAL, #{clientid}, #{carid}, TO_CHAR(#{rentStartDate},'yyyy/MM/dd'),
+		 TO_CHAR(#{rentEndDate},'yyyy/MM/dd'))		
+	
+	</insert>
+	
+	<insert id="insertSelectKey">
+		<selectKey keyProperty="rentid" order="BEFORE" resultType="long">
+			select seq_rent.nextval from dual
+		</selectKey>
+			insert into t_rent (rentid, clientid, carid, rentStartDate, rentEndDate)
+			values (#{rentid}, #{clientid}, #{carid}, to_char(#{rentStartDate},'yyyy/MM/dd'), 
+			to_char(#{rentEndDate}, 'yyyy/MM/dd'))
+	</insert>
+	
+	<update id = "update">
+		update t_rent set clientid = #{clientid}, carid = #{carid},	
+		rentStartDate = to_char(#{rentStartDate}, 'yyyy/MM/dd'), 
+		rentEndDate = to_char(#{rentEndDate}, 'yyyy/MM/dd')
+		where rentid = #{rentid}
+	</update>
+	
+	<delete id = "delete">
+		delete from t_rent where rentid = #{rentid}
+	</delete>
+</mapper>

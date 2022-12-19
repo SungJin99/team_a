@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+	PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+	"htttp://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace = "com.mnu.mapper.CarMapper">
+	<sql id ="criteria">
+		<trim prefix="(" suffix=")	AND " prefixOverrides="OR">
+			<foreach item='type' collection="typeArr">
+				<trim prefix="OR">
+					<choose>
+						<when test="type == 'N'.toString()">
+							carNumber like '%' ||#{keyword}||'%'						
+						</when>
+						<when test="type == 'S'.toString()">
+							series like '%' ||#{keyword}||'%'						
+						</when>
+						<when test="type == 'C'.toString()">
+							carColor like '%' ||#{keyword}||'%'						
+						</when>
+					</choose>
+				</trim>
+			</foreach>
+		</trim>
+	</sql>
+	
+	<select id = "read" resultType="com.mnu.domain.CarVO">
+		
+		select * from t_car where carid = #{carid}
+		
+	</select>
+	
+	<select id="getList" resultType="com.mnu.domain.CarVO">
+		<![CDATA[
+			select * from t_car where carid > 0
+		]]>
+	</select>
+	
+	<select id="getListWithPaging" resultType="com.mnu.domain.CarVO">
+		<![CDATA[
+			select
+				carid, carNumber, series, carColor
+			from
+				(
+				select /*+INDEX_DESC(t_car pk_car) */
+					rownum rn, carid, carNumber, series, carColor
+				from
+					t_car
+				where
+		]]>
+		
+		<include refid="criteria"></include>
+		
+		<![CDATA[
+			rownum < = #{pageNum} * #{amount}
+			)
+		where rn > (#{pageNum} -1) * #{amount}
+		]]>
+	</select>
+		
+	<select id="getTotalCount" resultType="int">
+		<![CDATA[
+			select count(*) from t_car
+			
+			where
+		]]>
+		
+		<include refid="criteria"></include>
+		
+		<![CDATA[
+			carid > 0
+		]]>
+	</select>
+	
+	<insert id = "insert">
+		
+		insert into t_car(carid, carNumber,series, carColor)
+		values (seq_car.nextval, #{carNumber}, #{series}, #{carColor})		
+	
+	</insert>
+	
+	<insert id="insertSelectKey">
+		<selectKey keyProperty="carid" order="BEFORE" resultType="long">
+			select seq_car.nextval from dual
+		</selectKey>
+			insert into t_car (carid, carNumber, series, carColor)
+			values(#{carid}, #{carNumber}, #{series}, #{carColor})
+	</insert>
+	
+	<update id = "update">
+		update t_car set carNumber = #{carNumber}, series = #{series}, carColor = #{carColor}
+		where carid = #{carid}
+	</update>
+	
+	<delete id = "delete">
+		delete from t_car where carid = #{carid}
+	</delete>
+</mapper>

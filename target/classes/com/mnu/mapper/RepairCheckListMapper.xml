@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+	PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+	"htttp://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace = "com.mnu.mapper.RepairCheckListMapper">
+	<sql id ="criteria">
+		<trim prefix="(" suffix=")	AND " prefixOverrides="OR">
+			<foreach item='type' collection="typeArr">
+				<trim prefix="OR">
+					<choose>
+						<when test="type == 'C'.toString()">
+							repairCheckList like '%' ||#{keyword}||'%'						
+						</when>
+					</choose>
+				</trim>
+			</foreach>
+		</trim>
+	</sql>
+	
+	<select id = "read" resultType="com.mnu.domain.RepairCheckListVO">
+		
+		select * from t_repairCheckList where checkListid = #{checkListid}
+		
+	</select>
+	
+	<select id="getList" resultType="com.mnu.domain.RepairCheckListVO">
+		<![CDATA[
+			select * from t_repairCheckList where checkListid > 0
+		]]>
+	</select>
+	
+	<select id="getListWithPaging" resultType="com.mnu.domain.RepairCheckListVO">
+		<![CDATA[
+			select
+				checkListid, repairCheckList, workTime
+			from
+				(
+				select /*+INDEX_DESC(t_repairCheckList pk_repairCheckList) */
+					rownum rn, checkListid, repairCheckList, workTime
+				from
+					t_repairCheckList
+				where
+		]]>
+		
+		<include refid="criteria"></include>
+		
+		<![CDATA[
+			rownum < = #{pageNum} * #{amount}
+			)
+		where rn > (#{pageNum} -1) * #{amount}
+		]]>
+	</select>
+		
+	<select id="getTotalCount" resultType="int">
+		<![CDATA[
+			select count(*) from t_repairCheckList
+			
+			where
+		]]>
+		
+		<include refid="criteria"></include>
+		
+		<![CDATA[
+			checkListid > 0
+		]]>
+	</select>
+	
+	<insert id = "insert">
+		
+		insert into t_repairCheckList(checkListid, repairCheckList, workTime)
+		values (seq_CheckList.nextval, #{repairCheckList}, #{workTime})		
+	
+	</insert>
+	
+	<insert id="insertSelectKey">
+		<selectKey keyProperty="checkListid" order="BEFORE" resultType="long">
+			select seq_CheckList.nextval from dual
+		</selectKey>
+			insert into t_repairCheckList (checkListid, repairCheckList, workTime)
+			values(#{checkListid},  #{repairCheckList}, #{workTime})
+	</insert>
+	
+	<update id = "update">
+		update t_repairCheckList set repairCheckList = #{repairCheckList},
+		workTime = #{workTime}
+		where checkListid = #{checkListid}
+	</update>
+	
+	<delete id = "delete">
+		delete from t_repairCheckList where checkListid = #{checkListid}
+	</delete>
+</mapper>
+
